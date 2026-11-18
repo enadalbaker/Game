@@ -42,7 +42,7 @@ p.s{margin:0;opacity:.8;font-size:14px;text-align:center;max-width:460px}
 #mg{position:absolute;inset:0;z-index:6;display:none;touch-action:none}
 #gr{position:absolute;left:5%;right:5%;top:18%;bottom:27%;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:2%}
 .ho{position:relative;overflow:hidden;background:radial-gradient(ellipse 50% 28% at 50% 92%,#3b2a1a 98%,transparent 100%)}
-.ho .fc{left:15%;width:70%;bottom:-80%;transition:bottom .15s}.ho .fc.up{bottom:12%}
+.ho .fc{left:15%;width:70%;bottom:-80%;transition:bottom .15s}.ho .fc.up{bottom:12%}.ho .fc{transition:bottom .08s}
 #bk{position:absolute;bottom:7%;transform:translateX(-50%);font-size:72px;z-index:7;pointer-events:none}
 .bl{position:absolute;aspect-ratio:.82;border-radius:50% 50% 48% 48%;display:flex;align-items:center;justify-content:center;z-index:6;box-shadow:inset -8px -8px 14px #0003;cursor:pointer}.bl img{width:72%}
 .bl::after{content:"";position:absolute;bottom:-24px;left:50%;width:2px;height:24px;background:#fff8}.bl.pop{transform:scale(1.5);opacity:0;transition:.2s}
@@ -127,7 +127,7 @@ let stg=1,total=0,gs=0,gn=0,gL=0,gN=20,gi,raf,lt2;
 function clearAll(){clearTimeout(gi);cancelAnimationFrame(raf);const m=$('mg');m.innerHTML='';m.style.display='none'}
 function lsn(ms){try{LA.currentTime=0;LA.play().catch(()=>{});clearTimeout(lt2);lt2=setTimeout(()=>LA.pause(),ms)}catch(e){}}
 function lf(f,ms){f.querySelector('img').src=imgs[tg].l||imgs[tg].n;f.classList.add('lg');lsn(ms)}
-function fe(sz){const d=document.createElement('div');d.className='fc';if(sz)d.style.width=sz+'px';d.innerHTML='<img src="'+imgs[tg].n+'">';return d}
+function fe(sz,w){const d=document.createElement('div');d.className='fc';if(sz)d.style.width=sz+'px';d.innerHTML='<img src="'+imgs[w||tg].n+'">';return d}
 function hudm(){$('hs').textContent='النقاط: '+gs;$('hr').textContent='المرحلة '+stg;$('hb').textContent=Math.min(gL+1,gN)+'/'+gN}
 function stageEnd(n,sc){
   total+=sc;clearAll();LA.pause();busy=true;
@@ -142,26 +142,35 @@ function finish(){t.style.display='none';stageEnd(1,score)}
 function startStage(n){
   clearAll();stg=n;busy=true;waitTap=false;LA.pause();t.style.display='none';gs=gn=gL=0;gN=20;
   $('mg').style.display='block';hudm();
-  $('msg').textContent='المرحلة '+n+': '+['','','اضرب الخلد! 🔨','امسك الوجوه الساقطة! 🧺','فقّع البالونات! 🎈'][n];
+  $('msg').textContent='المرحلة '+n+': '+['','','اضرب الخلد! 🔨 لا تضرب صورتك!','امسك الوجوه الساقطة! 🧺 لا تمسك صورتك!','فقّع البالونات! 🎈 لا تفقع صورتك!'][n];
   gi=setTimeout(()=>{$('msg').textContent='';[0,0,s2,s3,s4][n]()},1500);
 }
 function s2(){
-  const g=$('mg');g.innerHTML='<div id="gr">'+'<div class="ho"></div>'.repeat(9)+'</div>';
-  const hl=[...g.querySelectorAll('.ho')];
+  const g=$('mg');gN=25;
+  g.innerHTML='<div id="gr">'+'<div class="ho"></div>'.repeat(9)+'</div>';
+  const hl=[...g.querySelectorAll('.ho')];hudm();
   (function step(){
-    if(gn>=gN)return void(gi=setTimeout(()=>stageEnd(2,gs),900));
-    const h=hl[Math.random()*9|0],f=fe(),sp=Math.max(.45,1-gn*.03);let done=0,tm;
-    h.appendChild(f);gn++;
-    requestAnimationFrame(()=>requestAnimationFrame(()=>f.classList.add('up')));
-    f.onpointerdown=e=>{e.stopPropagation();if(done)return;done=1;clearTimeout(tm);gs++;gL++;hudm();beep(700,.12);f.classList.remove('up');setTimeout(()=>f.remove(),200);gi=setTimeout(step,500*sp)};
-    tm=setTimeout(()=>{if(done)return;done=1;gL++;hudm();lf(f,900);setTimeout(()=>{f.classList.remove('up');setTimeout(()=>f.remove(),150)},700);gi=setTimeout(step,800+300*sp)},1100*sp);
+    if(gL>=gN)return void(gi=setTimeout(()=>stageEnd(2,gs),900));
+    const ms=Math.max(330,780-gL*20),nd=gL<3?1:gL<10?2:3;
+    const idx=[0,1,2,3,4,5,6,7,8].sort(()=>Math.random()-.5).slice(0,nd+1);
+    let done=0,tm;
+    const fs=idx.map((k,i)=>{const f=fe(0,i?me:tg);hl[k].appendChild(f);return f});
+    const hide=()=>fs.forEach(f=>{f.classList.remove('up');setTimeout(()=>f.remove(),120)});
+    const fin=d=>{done=1;clearTimeout(tm);gL++;hudm();hide();gi=setTimeout(step,d)};
+    requestAnimationFrame(()=>requestAnimationFrame(()=>fs.forEach(f=>f.classList.add('up'))));
+    fs.forEach((f,i)=>f.onpointerdown=e=>{
+      e.stopPropagation();if(done)return;
+      if(i){gs=Math.max(0,gs-1);beep(120,.25);$('msg').textContent='❌ غلط!';setTimeout(()=>{$('msg').textContent=''},500);fin(350)}
+      else{gs++;beep(700,.1);fin(180)}
+    });
+    tm=setTimeout(()=>{if(done)return;done=1;gL++;hudm();lf(fs[0],900);setTimeout(hide,600);gi=setTimeout(step,800)},ms);
   })();
 }
-function run(spawn,upd){
-  let last=0,nx=0;const L=[];
+function run(N,spawn,upd,iv0,ivMin){
+  let last=0,nx=0;const L=[];gN=N;hudm();
   (function loop(ts){
     const dt=Math.min(50,ts-(last||ts))/1000;last=ts;nx-=dt;
-    if(gn<gN&&nx<=0){const o=spawn();o.v=o.v0*(1+gn*.045);$('mg').appendChild(o);L.push(o);gn++;nx=Math.max(.5,1.1-gn*.03)}
+    if(gn<gN&&nx<=0){const o=spawn();o.v=o.v0*(1+gn*.04);$('mg').appendChild(o);L.push(o);gn++;nx=Math.max(ivMin,iv0-gn*.025)}
     for(const o of L)if(!o.done)upd(o,dt);
     if(gL>=gN)return void(gi=setTimeout(()=>stageEnd(stg,gs),1300));
     raf=requestAnimationFrame(loop);
@@ -169,19 +178,47 @@ function run(spawn,upd){
 }
 function s3(){
   const g=$('mg'),bk=document.createElement('div'),W=innerWidth,H=innerHeight;let bx=W/2;
+  const half=W<600?48:58;
   bk.id='bk';bk.textContent='🧺';bk.style.left=bx+'px';g.appendChild(bk);
   g.onpointermove=g.onpointerdown=e=>{bx=e.clientX;bk.style.left=bx+'px'};
-  run(()=>{const sz=W<600?70:90,f=fe(sz);f.x=rnd(sz/2,W-sz/2);f.y=-sz;f.v0=H*.3;f.style.left=(f.x-sz/2)+'px';f.style.top=f.y+'px';return f},
-  (f,dt)=>{f.y+=f.v*dt;f.style.top=f.y+'px';
-    if(f.y>H*.74&&f.y<H*.9&&Math.abs(f.x-bx)<70){f.done=1;gs++;gL++;hudm();beep(700,.1);f.remove()}
-    else if(f.y>=H*.9){f.done=1;gL++;hudm();lf(f,1200);setTimeout(()=>f.remove(),1300)}});
+  run(30,()=>{
+    const sz=W<600?64:80,bad=Math.random()<.3,f=fe(sz,bad?me:tg);
+    f.bad=bad;f.sz=sz;f.x0=rnd(sz,W-sz);f.x=f.x0;f.y=-sz;f.t=0;f.ph=rnd(0,6.28);
+    f.amp=Math.random()<.5?0:rnd(20,60);f.v0=H*.5;
+    f.style.left=(f.x-sz/2)+'px';f.style.top=f.y+'px';return f},
+  (f,dt)=>{
+    f.t+=dt;f.y+=f.v*dt;f.x=f.x0+Math.sin(f.t*3+f.ph)*f.amp;
+    f.style.left=(f.x-f.sz/2)+'px';f.style.top=f.y+'px';
+    if(f.y>H*.74&&f.y<H*.9&&Math.abs(f.x-bx)<half){
+      f.done=1;gL++;
+      if(f.bad){gs=Math.max(0,gs-1);beep(120,.25)}else{gs++;beep(700,.1)}
+      hudm();f.remove()}
+    else if(f.y>=H*.9){
+      f.done=1;gL++;hudm();
+      if(f.bad)f.remove();else{lf(f,1200);setTimeout(()=>f.remove(),1300)}}
+  },1.0,.38);
 }
 function s4(){
   const W=innerWidth,H=innerHeight;
-  run(()=>{const sz=W<600?90:110,b=document.createElement('div');b.className='bl';b.style.width=sz+'px';b.style.background='hsl('+(Math.random()*360|0)+',75%,55%)';b.innerHTML='<img src="'+imgs[tg].n+'">';b.x=rnd(sz/2,W-sz/2);b.y=H;b.v0=H*.17;b.style.left=(b.x-sz/2)+'px';b.style.top=H+'px';
-    b.onpointerdown=e=>{e.stopPropagation();if(b.done)return;b.done=1;gs++;gL++;hudm();beep(900,.08);b.classList.add('pop');setTimeout(()=>b.remove(),200)};return b},
-  (b,dt)=>{b.y-=b.v*dt;b.style.top=b.y+'px';
-    if(b.y<H*.1){b.done=1;gL++;hudm();b.style.background='none';lf(b,1000);setTimeout(()=>b.remove(),1000)}});
+  run(30,()=>{
+    const sz=W<600?74:90,bad=Math.random()<.3,b=document.createElement('div');
+    b.className='bl';b.style.width=sz+'px';
+    b.style.background='hsl('+(Math.random()*360|0)+',75%,55%)';
+    b.innerHTML='<img src="'+imgs[bad?me:tg].n+'">';
+    b.bad=bad;b.sz=sz;b.x0=rnd(sz,W-sz);b.x=b.x0;b.y=H;b.t=0;b.ph=rnd(0,6.28);b.amp=rnd(15,50);b.v0=H*.3;
+    b.style.left=(b.x-sz/2)+'px';b.style.top=H+'px';
+    b.onpointerdown=e=>{
+      e.stopPropagation();if(b.done)return;b.done=1;gL++;
+      if(b.bad){gs=Math.max(0,gs-1);beep(120,.25)}else{gs++;beep(900,.08)}
+      hudm();b.classList.add('pop');setTimeout(()=>b.remove(),200)};
+    return b},
+  (b,dt)=>{
+    b.t+=dt;b.y-=b.v*dt;b.x=b.x0+Math.sin(b.t*4+b.ph)*b.amp;
+    b.style.left=(b.x-b.sz/2)+'px';b.style.top=b.y+'px';
+    if(b.y<H*.1){
+      b.done=1;gL++;hudm();
+      if(b.bad)b.remove();else{b.style.background='none';lf(b,1000);setTimeout(()=>b.remove(),1000)}}
+  },.9,.32);
 }
 </script>
 </body>
