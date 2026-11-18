@@ -68,15 +68,17 @@ function up(who,kind,inp){const f=inp.files[0];if(!f)return;const r=new FileRead
 paint();
 
 const $=id=>document.getElementById(id),t=$('t'),ti=$('ti'),stage=$('stage');
-let me,tg,round,score,shots,busy,mv,to,ROUNDS=10;
-function beep(f,d){try{const a=new(window.AudioContext||window.webkitAudioContext)(),o=a.createOscillator(),g=a.createGain();o.frequency.value=f;g.gain.value=.15;o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+d)}catch(e){}}
+let me,tg,round,score,shots,busy,mv,to,waitTap=false,ROUNDS=10;
+let AC,lt;function ctx(){AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==='suspended')AC.resume();return AC}
+function laugh(){try{const a=ctx(),t0=a.currentTime;for(let i=0;i<7;i++){const s=t0+i*.15,f=(340-i*14)*(1+Math.random()*.06);const o=a.createOscillator(),g=a.createGain(),b1=a.createBiquadFilter(),b2=a.createBiquadFilter();o.type='sawtooth';o.frequency.setValueAtTime(f,s);o.frequency.exponentialRampToValueAtTime(f*.85,s+.12);b1.type='bandpass';b1.frequency.value=900;b1.Q.value=4;b2.type='bandpass';b2.frequency.value=1500;b2.Q.value=5;g.gain.setValueAtTime(.0001,s);g.gain.exponentialRampToValueAtTime(.35,s+.02);g.gain.exponentialRampToValueAtTime(.0001,s+.12);o.connect(b1);o.connect(b2);b1.connect(g);b2.connect(g);g.connect(a.destination);o.start(s);o.stop(s+.14)}}catch(e){}}
+function beep(f,d){try{const a=ctx(),o=a.createOscillator(),g=a.createGain();o.frequency.value=f;g.gain.value=.15;o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+d)}catch(e){}}
 function hud(){$('hs').textContent='الصيد: '+score;$('hr').textContent='الجولة '+Math.min(round,ROUNDS)+'/'+ROUNDS;$('hb').textContent='🔫 '+shots}
 function go(who){me=who;tg=who==='jarrah'?'azouz':'jarrah';round=0;score=0;$('start').classList.add('off');$('end').classList.add('off');next()}
 function home(){clearInterval(mv);clearTimeout(to);t.style.display='none';$('end').classList.add('off');$('start').classList.remove('off')}
 function rnd(a,b){return a+Math.random()*(b-a)}
 function place(){t.style.left=rnd(4,72)+'%';t.style.top=rnd(18,52)+'%'}
 function next(){
-  clearInterval(mv);clearTimeout(to);round++;
+  clearInterval(mv);clearTimeout(to);clearInterval(lt);round++;
   if(round>ROUNDS){return finish()}
   shots=2;busy=false;hud();$('msg').textContent='';var f=Math.max(.35,1-(round-1)*.07);
   t.className='';t.style.transition='none';t.style.display='block';t.style.left=rnd(10,70)+'%';t.style.top='78%';ti.src=imgs[tg].n;
@@ -87,8 +89,8 @@ function miss(){
   if(busy)return;busy=true;clearInterval(mv);clearTimeout(to);
   ti.src=imgs[tg].l||imgs[tg].n;t.className='laugh';
   t.style.left=(parseFloat(t.style.left)||40)+'%';t.style.top='48%';
-  $('msg').textContent=NAMES[tg]+' يضحك عليك! 😂';beep(150,.4);
-  setTimeout(()=>{t.style.top='85%';setTimeout(next,700)},2200);
+  $('msg').textContent=NAMES[tg]+' يضحك عليك! 😂';beep(150,.2);laugh();clearInterval(lt);lt=setInterval(laugh,1700);
+  setTimeout(()=>{waitTap=true;$('msg').innerHTML=NAMES[tg]+' يضحك عليك! 😂<br><small style="font-size:.45em">اضغط على الشاشة للمتابعة</small>'},700);
 }
 t.addEventListener('pointerdown',e=>{
   e.stopPropagation();if(busy)return;
@@ -99,6 +101,7 @@ t.addEventListener('pointerdown',e=>{
   setTimeout(next,1100);
 });
 stage.addEventListener('pointerdown',()=>{
+  if(waitTap){clearInterval(lt);waitTap=false;$('msg').textContent='';t.style.top='85%';setTimeout(next,700);return}
   if(busy||!me)return;
   shots--;hud();beep(300,.1);
   if(shots<=0)miss();
