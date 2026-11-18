@@ -37,6 +37,15 @@ h1{margin:0;font-size:clamp(26px,7vw,44px)}
 .up input{display:none}
 p.s{margin:0;opacity:.8;font-size:14px;text-align:center;max-width:460px}
 .big{padding:12px 28px;font-size:18px;font-weight:700;border:0;border-radius:12px;background:#ffb703;color:#222;cursor:pointer}
+.fc{position:absolute}.fc img,.bl img{aspect-ratio:1;object-fit:cover;border-radius:50%;border:3px solid #fff;display:block;pointer-events:none}.fc img{width:100%;box-shadow:0 3px 8px #0006}
+.lg img{animation:sh .32s infinite}
+#mg{position:absolute;inset:0;z-index:6;display:none;touch-action:none}
+#gr{position:absolute;left:5%;right:5%;top:18%;bottom:27%;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:2%}
+.ho{position:relative;overflow:hidden;background:radial-gradient(ellipse 50% 28% at 50% 92%,#3b2a1a 98%,transparent 100%)}
+.ho .fc{left:15%;width:70%;bottom:-80%;transition:bottom .15s}.ho .fc.up{bottom:12%}
+#bk{position:absolute;bottom:7%;transform:translateX(-50%);font-size:72px;z-index:7;pointer-events:none}
+.bl{position:absolute;aspect-ratio:.82;border-radius:50% 50% 48% 48%;display:flex;align-items:center;justify-content:center;z-index:6;box-shadow:inset -8px -8px 14px #0003;cursor:pointer}.bl img{width:72%}
+.bl::after{content:"";position:absolute;bottom:-24px;left:50%;width:2px;height:24px;background:#fff8}.bl.pop{transform:scale(1.5);opacity:0;transition:.2s}
 </style>
 </head>
 <body>
@@ -45,6 +54,7 @@ p.s{margin:0;opacity:.8;font-size:14px;text-align:center;max-width:460px}
   <div class="trees"><span>🌲</span><span>🌳</span><span>🌲</span><span>🌳</span></div>
   <div id="t" style="display:none;left:40%;top:80%"><div id="bub">هههههه 😂</div><img id="ti" alt=""></div>
   <div class="bushes"><span>🌿</span><span>🌱</span><span>🌿</span><span>🌱</span><span>🌿</span></div>
+  <div id="mg"></div>
   <div id="msg"></div>
 </div>
 
@@ -59,7 +69,7 @@ p.s{margin:0;opacity:.8;font-size:14px;text-align:center;max-width:460px}
 
 <div class="ov off" id="end">
   <h1 id="et"></h1><p class="s" id="es"></p>
-  <button class="big" onclick="go(me)">العب مرة ثانية</button>
+  <button class="big" id="eb" onclick="go(me)">العب مرة ثانية</button>
   <button class="big" style="background:#ffffff22;color:#fff" onclick="home()">الصفحة الرئيسية</button>
 </div>
 
@@ -80,8 +90,8 @@ let AC,lt;function ctx(){AC=AC||new(window.AudioContext||window.webkitAudioConte
 function laugh(){try{const a=ctx(),t0=a.currentTime;for(let i=0;i<7;i++){const s=t0+i*.15,f=(340-i*14)*(1+Math.random()*.06);const o=a.createOscillator(),g=a.createGain(),b1=a.createBiquadFilter(),b2=a.createBiquadFilter();o.type='sawtooth';o.frequency.setValueAtTime(f,s);o.frequency.exponentialRampToValueAtTime(f*.85,s+.12);b1.type='bandpass';b1.frequency.value=900;b1.Q.value=4;b2.type='bandpass';b2.frequency.value=1500;b2.Q.value=5;g.gain.setValueAtTime(.0001,s);g.gain.exponentialRampToValueAtTime(.35,s+.02);g.gain.exponentialRampToValueAtTime(.0001,s+.12);o.connect(b1);o.connect(b2);b1.connect(g);b2.connect(g);g.connect(a.destination);o.start(s);o.stop(s+.14)}}catch(e){}}
 function beep(f,d){try{const a=ctx(),o=a.createOscillator(),g=a.createGain();o.frequency.value=f;g.gain.value=.15;o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+d)}catch(e){}}
 function hud(){$('hs').textContent='الصيد: '+score;$('hr').textContent='الجولة '+Math.min(round,ROUNDS)+'/'+ROUNDS;$('hb').textContent='🔫 '+shots}
-function go(who){try{LA.muted=true;LA.play().then(()=>{LA.pause();LA.currentTime=0;LA.muted=false}).catch(()=>{LA.muted=false})}catch(e){}me=who;tg=who==='jarrah'?'azouz':'jarrah';round=0;score=0;$('start').classList.add('off');$('end').classList.add('off');next()}
-function home(){clearInterval(mv);clearTimeout(to);t.style.display='none';$('end').classList.add('off');$('start').classList.remove('off')}
+function go(who){try{LA.muted=true;LA.play().then(()=>{LA.pause();LA.currentTime=0;LA.muted=false}).catch(()=>{LA.muted=false})}catch(e){}me=who;tg=who==='jarrah'?'azouz':'jarrah';round=0;score=0;total=0;stg=1;clearAll();$('start').classList.add('off');$('end').classList.add('off');next()}
+function home(){clearAll();LA.pause();clearInterval(mv);clearTimeout(to);t.style.display='none';$('end').classList.add('off');$('start').classList.remove('off')}
 function rnd(a,b){return a+Math.random()*(b-a)}
 function place(){t.style.left=rnd(4,72)+'%';t.style.top=rnd(18,52)+'%'}
 function next(){
@@ -113,11 +123,65 @@ stage.addEventListener('pointerdown',()=>{
   shots--;hud();beep(300,.1);
   if(shots<=0)miss();
 });
-function finish(){
-  t.style.display='none';
-  $('et').textContent=score>=7?'🏆 صياد ماهر!':score>=4?'👍 مو بطال':'😂 '+NAMES[tg]+' فاز عليك';
-  $('es'+'').textContent=NAMES[me]+': صدت '+NAMES[tg]+' '+score+' من '+ROUNDS+' مرات';
+let stg=1,total=0,gs=0,gn=0,gL=0,gN=20,gi,raf,lt2;
+function clearAll(){clearTimeout(gi);cancelAnimationFrame(raf);const m=$('mg');m.innerHTML='';m.style.display='none'}
+function lsn(ms){try{LA.currentTime=0;LA.play().catch(()=>{});clearTimeout(lt2);lt2=setTimeout(()=>LA.pause(),ms)}catch(e){}}
+function lf(f,ms){f.querySelector('img').src=imgs[tg].l||imgs[tg].n;f.classList.add('lg');lsn(ms)}
+function fe(sz){const d=document.createElement('div');d.className='fc';if(sz)d.style.width=sz+'px';d.innerHTML='<img src="'+imgs[tg].n+'">';return d}
+function hudm(){$('hs').textContent='النقاط: '+gs;$('hr').textContent='المرحلة '+stg;$('hb').textContent=Math.min(gL+1,gN)+'/'+gN}
+function stageEnd(n,sc){
+  total+=sc;clearAll();LA.pause();busy=true;
+  const nm=['','الصيد','اضرب الخلد','الوجوه الساقطة','بالونات الصيد'],last=n===4,b=$('eb');
+  $('et').textContent=last?'🏆 خلصت كل المراحل!':'✅ خلصت مرحلة '+nm[n];
+  $('es').textContent=last?'مجموع نقاطك: '+total:'نقاطك: '+sc+' · المجموع: '+total;
+  b.textContent=last?'العب من جديد':'المرحلة '+(n+1)+': '+nm[n+1];
+  b.onclick=()=>{$('end').classList.add('off');if(last)go(me);else startStage(n+1)};
   $('end').classList.remove('off');
+}
+function finish(){t.style.display='none';stageEnd(1,score)}
+function startStage(n){
+  clearAll();stg=n;busy=true;waitTap=false;LA.pause();t.style.display='none';gs=gn=gL=0;gN=20;
+  $('mg').style.display='block';hudm();
+  $('msg').textContent='المرحلة '+n+': '+['','','اضرب الخلد! 🔨','امسك الوجوه الساقطة! 🧺','فقّع البالونات! 🎈'][n];
+  gi=setTimeout(()=>{$('msg').textContent='';[0,0,s2,s3,s4][n]()},1500);
+}
+function s2(){
+  const g=$('mg');g.innerHTML='<div id="gr">'+'<div class="ho"></div>'.repeat(9)+'</div>';
+  const hl=[...g.querySelectorAll('.ho')];
+  (function step(){
+    if(gn>=gN)return void(gi=setTimeout(()=>stageEnd(2,gs),900));
+    const h=hl[Math.random()*9|0],f=fe(),sp=Math.max(.45,1-gn*.03);let done=0,tm;
+    h.appendChild(f);gn++;
+    requestAnimationFrame(()=>requestAnimationFrame(()=>f.classList.add('up')));
+    f.onpointerdown=e=>{e.stopPropagation();if(done)return;done=1;clearTimeout(tm);gs++;gL++;hudm();beep(700,.12);f.classList.remove('up');setTimeout(()=>f.remove(),200);gi=setTimeout(step,500*sp)};
+    tm=setTimeout(()=>{if(done)return;done=1;gL++;hudm();lf(f,900);setTimeout(()=>{f.classList.remove('up');setTimeout(()=>f.remove(),150)},700);gi=setTimeout(step,800+300*sp)},1100*sp);
+  })();
+}
+function run(spawn,upd){
+  let last=0,nx=0;const L=[];
+  (function loop(ts){
+    const dt=Math.min(50,ts-(last||ts))/1000;last=ts;nx-=dt;
+    if(gn<gN&&nx<=0){const o=spawn();o.v=o.v0*(1+gn*.045);$('mg').appendChild(o);L.push(o);gn++;nx=Math.max(.5,1.1-gn*.03)}
+    for(const o of L)if(!o.done)upd(o,dt);
+    if(gL>=gN)return void(gi=setTimeout(()=>stageEnd(stg,gs),1300));
+    raf=requestAnimationFrame(loop);
+  })(performance.now());
+}
+function s3(){
+  const g=$('mg'),bk=document.createElement('div'),W=innerWidth,H=innerHeight;let bx=W/2;
+  bk.id='bk';bk.textContent='🧺';bk.style.left=bx+'px';g.appendChild(bk);
+  g.onpointermove=g.onpointerdown=e=>{bx=e.clientX;bk.style.left=bx+'px'};
+  run(()=>{const sz=W<600?70:90,f=fe(sz);f.x=rnd(sz/2,W-sz/2);f.y=-sz;f.v0=H*.3;f.style.left=(f.x-sz/2)+'px';f.style.top=f.y+'px';return f},
+  (f,dt)=>{f.y+=f.v*dt;f.style.top=f.y+'px';
+    if(f.y>H*.74&&f.y<H*.9&&Math.abs(f.x-bx)<70){f.done=1;gs++;gL++;hudm();beep(700,.1);f.remove()}
+    else if(f.y>=H*.9){f.done=1;gL++;hudm();lf(f,1200);setTimeout(()=>f.remove(),1300)}});
+}
+function s4(){
+  const W=innerWidth,H=innerHeight;
+  run(()=>{const sz=W<600?90:110,b=document.createElement('div');b.className='bl';b.style.width=sz+'px';b.style.background='hsl('+(Math.random()*360|0)+',75%,55%)';b.innerHTML='<img src="'+imgs[tg].n+'">';b.x=rnd(sz/2,W-sz/2);b.y=H;b.v0=H*.17;b.style.left=(b.x-sz/2)+'px';b.style.top=H+'px';
+    b.onpointerdown=e=>{e.stopPropagation();if(b.done)return;b.done=1;gs++;gL++;hudm();beep(900,.08);b.classList.add('pop');setTimeout(()=>b.remove(),200)};return b},
+  (b,dt)=>{b.y-=b.v*dt;b.style.top=b.y+'px';
+    if(b.y<H*.1){b.done=1;gL++;hudm();b.style.background='none';lf(b,1000);setTimeout(()=>b.remove(),1000)}});
 }
 </script>
 </body>
